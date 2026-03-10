@@ -79,6 +79,9 @@ result_until   = 0
 cooldown_until = 0
 admin_sessions = set()
 
+@app.route("/")
+def home():
+    return "FaceGate Running Successfully"
 # ── Settings load/save ────────────────────────────────────────────────────────
 def load_settings():
     global TOLERANCE, CAMERA_INDEX, SCAN_INTERVAL
