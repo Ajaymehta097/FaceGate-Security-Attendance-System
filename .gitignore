@@ -1,0 +1,31 @@
+# ── Face Data & Photos ──────────────────────────
+known_faces/
+alerts/
+data/face_database.pkl
+data/admin.pkl
+data/qrcodes/
+
+# ── Attendance & Logs (private data) ────────────
+data/attendance.json
+data/alerts.json
+logs/
+
+# ── Settings (machine specific) ─────────────────
+data/settings.json
+
+# ── Python ──────────────────────────────────────
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# ── OS files ────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Generated reports ───────────────────────────
+data/*.xlsx
+data/*.csv

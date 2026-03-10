@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["cmake", "gcc", "g++", "libopenblas", "blas", "lapack"]
+
+[phases.install]
+cmds = [
+  "pip install --upgrade pip",
+  "pip install cmake",
+  "pip install dlib==19.24.2",
+  "pip install face-recognition==1.3.0",
+  "pip install -r requirements.txt"
+]
+
+[start]
+cmd = "python server.py"

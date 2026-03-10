@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaceGate — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Syne:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #07050f;
+  --bg2:    #0d0818;
+  --panel:  #110d1e;
+  --card:   #160f26;
+  --border: #2a1a4a;
+  --purple: #b94fff;
+  --pink:   #ff4fa3;
+  --violet: #7c3aed;
+  --lav:    #c084fc;
+  --gold:   #fbbf24;
+  --green:  #34d399;
+  --red:    #f43f5e;
+  --text:   #e2d4f8;
+  --dim:    #5b4480;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Syne', sans-serif; min-height: 100vh; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 45% at 10% 10%, rgba(124,58,237,0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 90% 90%, rgba(255,79,163,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 50%, rgba(185,79,255,0.04) 0%, transparent 70%);
+}
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(185,79,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(185,79,255,0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.scanlines { position: fixed; inset: 0; z-index: 9999; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(185,79,255,0.012) 2px, rgba(185,79,255,0.012) 4px); }
+
+/* ── Login Screen ── */
+#loginScreen {
+  position: fixed; inset: 0; z-index: 500;
+  background: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(124,58,237,0.08), transparent),
+              var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+  width: 440px; border-radius: 18px; overflow: hidden;
+  background: rgba(17,13,30,0.9);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 80px rgba(185,79,255,0.12), 0 0 160px rgba(255,79,163,0.05);
+  backdrop-filter: blur(20px);
+}
+.login-hdr {
+  padding: 32px 28px 24px; text-align: center;
+  background: linear-gradient(180deg, rgba(185,79,255,0.08), transparent);
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.login-hdr::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(185,79,255,0.1), transparent);
+}
+.login-icon-wrap {
+  width: 70px; height: 70px; border-radius: 18px; margin: 0 auto 16px;
+  background: linear-gradient(135deg, var(--violet), var(--pink));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; box-shadow: 0 0 30px rgba(185,79,255,0.4);
+  position: relative; z-index: 1;
+}
+.login-title {
+  font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 900;
+  letter-spacing: 4px; position: relative; z-index: 1;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.login-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); margin-top: 6px; letter-spacing: 2px; position: relative; z-index: 1; }
+
+.login-body { padding: 26px; }
+
+.login-tabs { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+.ltab {
+  flex: 1; padding: 10px; background: transparent; border: none;
+  color: var(--dim); font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 1.5px; cursor: pointer; text-transform: uppercase; transition: all 0.25s;
+}
+.ltab.active { background: rgba(185,79,255,0.12); color: var(--purple); }
+
+.face-area {
+  width: 100%; aspect-ratio: 4/3; background: rgba(7,5,15,0.8);
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; margin-bottom: 14px; position: relative; transition: all 0.25s;
+}
+.face-area:hover { border-color: var(--purple); box-shadow: 0 0 20px rgba(185,79,255,0.1); }
+.face-area video, .face-area img { width: 100%; height: 100%; object-fit: cover; }
+.face-ph { text-align: center; color: var(--dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 2.2; }
+.face-scan { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--purple), var(--pink), transparent); filter: blur(1px); box-shadow: 0 0 8px var(--purple); animation: sl 2s linear infinite; opacity: 0; transition: opacity 0.3s; z-index: 5; }
+.face-scan.active { opacity: 1; }
+@keyframes sl { 0%{top:4%} 100%{top:96%} }
+
+.btn-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.lbtn {
+  flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--dim);
+  font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.5px; cursor: pointer; text-transform: uppercase; transition: all 0.25s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.lbtn:hover { border-color: var(--purple); color: var(--lav); }
+.lbtn.pur { border-color: var(--purple); color: var(--purple); background: rgba(185,79,255,0.08); }
+.lbtn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; margin-bottom: 6px; }
+.field input { width: 100%; background: rgba(7,5,15,0.8); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; font-family: 'Syne', sans-serif; font-size: 13px; border-radius: 8px; outline: none; transition: all 0.25s; }
+.field input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(185,79,255,0.1); }
+
+.login-action-btn {
+  width: 100%; padding: 13px; border-radius: 10px; cursor: pointer;
+  background: linear-gradient(135deg, rgba(185,79,255,0.15), rgba(255,79,163,0.1));
+  border: 1px solid var(--purple); color: var(--lav);
+  font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; transition: all 0.3s;
+  box-shadow: 0 0 20px rgba(185,79,255,0.1);
+}
+.login-action-btn:hover { background: linear-gradient(135deg, rgba(185,79,255,0.25), rgba(255,79,163,0.18)); box-shadow: 0 0 36px rgba(185,79,255,0.2); }
+
+.lmsg { padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: none; }
+.lmsg.ok  { background: rgba(52,211,153,0.1); border: 1px solid var(--green); color: var(--green); }
+.lmsg.err { background: rgba(244,63,94,0.1); border: 1px solid var(--red); color: var(--red); }
+
+/* ── Main App ── */
+header {
+  position: sticky; top: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 62px;
+  background: rgba(7,5,15,0.93); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+}
+.logo {
+  font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 900; letter-spacing: 5px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 10px rgba(185,79,255,0.35));
+  display: flex; align-items: center; gap: 12px;
+}
+.logo-ic { width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, var(--violet), var(--pink)); display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 0 16px rgba(185,79,255,0.4); flex-shrink: 0; }
+.logo-sub { font-size: 11px; letter-spacing: 3px; color: var(--gold); background: none; -webkit-text-fill-color: var(--gold); }
+.hright { display: flex; align-items: center; gap: 14px; }
+.hbadge { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; padding: 5px 14px; border-radius: 20px; border: 1px solid var(--gold); color: var(--gold); display: flex; align-items: center; gap: 6px; box-shadow: 0 0 10px rgba(251,191,36,0.1); }
+.back-link { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); text-decoration: none; padding: 5px 12px; border: 1px solid var(--border); border-radius: 8px; transition: all 0.25s; }
+.back-link:hover { border-color: var(--purple); color: var(--lav); }
+#adminName { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); }
+.pulse { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: p 1.4s infinite; }
+@keyframes p { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+
+.app { position: relative; z-index: 1; display: grid; grid-template-columns: 240px 1fr; height: calc(100vh - 62px); overflow: hidden; }
+
+.sidebar { background: rgba(17,13,30,0.85); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 18px 0; backdrop-filter: blur(10px); }
+.nav-grp { padding: 0 18px 5px; margin-top: 16px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 3px; color: var(--dim); text-transform: uppercase; }
+.nav-item { display: flex; align-items: center; gap: 11px; padding: 12px 20px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--dim); border-left: 3px solid transparent; transition: all 0.25s; position: relative; overflow: hidden; }
+.nav-item::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(185,79,255,0.08), transparent); opacity: 0; transition: opacity 0.25s; }
+.nav-item:hover { color: var(--lav); }
+.nav-item:hover::after { opacity: 1; }
+.nav-item.active { color: var(--purple); border-left-color: var(--purple); }
+.nav-item.active::after { opacity: 1; }
+
+.logout-btn { margin: auto 16px 0; padding: 11px; background: rgba(244,63,94,0.06); border: 1px solid rgba(244,63,94,0.3); color: var(--red); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 1px; cursor: pointer; border-radius: 9px; text-transform: uppercase; transition: all 0.25s; }
+.logout-btn:hover { background: rgba(244,63,94,0.12); box-shadow: 0 0 16px rgba(244,63,94,0.1); }
+
+.main { overflow-y: auto; padding: 26px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.main::-webkit-scrollbar { width: 4px; }
+.main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.page { display: none; }
+.page.active { display: block; animation: pgIn 0.35s cubic-bezier(0.16,1,0.3,1); }
+@keyframes pgIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.page-title { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; letter-spacing: 3px; margin-bottom: 22px; display: flex; align-items: center; gap: 12px; }
+.at { background: linear-gradient(135deg, var(--purple), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.thr { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 26px; }
+.stat-card {
+  background: rgba(22,15,38,0.75); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px; transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  position: relative; overflow: hidden;
+}
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--purple), var(--pink)); opacity: 0; transition: opacity 0.3s; }
+.stat-card:hover::before { opacity: 1; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 34px rgba(185,79,255,0.1); border-color: rgba(185,79,255,0.3); }
+.stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; margin-bottom: 12px; }
+.stat-val { font-family: 'Orbitron', monospace; font-size: 38px; font-weight: 700; background: linear-gradient(135deg, var(--purple), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.stat-val.green { background: linear-gradient(135deg, var(--green), #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.stat-val.red { background: linear-gradient(135deg, var(--red), #dc2626); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.stat-val.gold { background: linear-gradient(135deg, var(--gold), #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.stat-sub { font-size: 11px; color: var(--dim); margin-top: 4px; }
+
+/* Tables */
+.tbl-wrap { border-radius: 14px; border: 1px solid var(--border); overflow: hidden; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2.5px; color: var(--dim); text-transform: uppercase; text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--border); background: rgba(22,15,38,0.6); }
+td { padding: 13px 16px; border-bottom: 1px solid rgba(42,26,74,0.3); font-size: 13px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(185,79,255,0.03); }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; }
+.badge.granted { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.35); color: var(--green); }
+.badge.denied  { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.35); color: var(--red); }
+.badge.student { background: rgba(185,79,255,0.1); border: 1px solid rgba(185,79,255,0.3); color: var(--lav); }
+.badge.staff   { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: var(--gold); }
+.badge.admin   { background: rgba(255,79,163,0.1); border: 1px solid rgba(255,79,163,0.3); color: var(--pink); }
+
+.s-av { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; }
+.s-av img { width: 100%; height: 100%; object-fit: cover; }
+.del-btn { background: transparent; border: 1px solid rgba(244,63,94,0.4); color: var(--red); padding: 5px 12px; border-radius: 7px; cursor: pointer; font-size: 12px; font-family: 'JetBrains Mono', monospace; transition: all 0.2s; }
+.del-btn:hover { background: rgba(244,63,94,0.1); border-color: var(--red); }
+
+.conf-row { display: inline-flex; align-items: center; gap: 8px; }
+.conf-bg { width: 60px; height: 3px; background: var(--border); border-radius: 2px; }
+.conf-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
+
+/* Settings */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.s-card { background: rgba(22,15,38,0.75); border: 1px solid var(--border); border-radius: 14px; padding: 24px; backdrop-filter: blur(8px); }
+.s-title { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, var(--purple), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.f { margin-bottom: 16px; }
+.f label { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; margin-bottom: 7px; }
+.f label span { color: var(--purple); -webkit-text-fill-color: var(--purple); font-size: 13px; }
+input[type=range] { width: 100%; accent-color: var(--purple); }
+.f input[type=number], .f select { width: 100%; background: rgba(7,5,15,0.8); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; font-family: 'Syne', sans-serif; font-size: 13px; border-radius: 8px; outline: none; transition: all 0.25s; }
+.f input:focus, .f select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(185,79,255,0.1); }
+.f select option { background: var(--panel); }
+
+.save-btn { width: 100%; padding: 12px; border-radius: 10px; cursor: pointer; background: linear-gradient(135deg, rgba(185,79,255,0.12), rgba(255,79,163,0.08)); border: 1px solid var(--purple); color: var(--lav); font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; transition: all 0.3s; margin-top: 4px; }
+.save-btn:hover { background: linear-gradient(135deg, rgba(185,79,255,0.22), rgba(255,79,163,0.16)); box-shadow: 0 0 24px rgba(185,79,255,0.2); }
+
+.msg { padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: none; }
+.msg.ok  { background: rgba(52,211,153,0.1); border: 1px solid var(--green); color: var(--green); }
+.msg.err { background: rgba(244,63,94,0.1); border: 1px solid var(--red); color: var(--red); }
+
+.cap-box { width: 100%; aspect-ratio: 4/3; background: rgba(7,5,15,0.8); border: 1px dashed var(--border); border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.25s; margin-bottom: 12px; }
+.cap-box:hover { border-color: var(--purple); }
+.cap-box video, .cap-box img { width: 100%; height: 100%; object-fit: cover; }
+.cap-ph { text-align: center; color: var(--dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 2.2; }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.count-pill { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; background: rgba(22,15,38,0.5); }
+.btn-s { padding: 9px 18px; border-radius: 8px; border: 1px solid var(--purple); background: rgba(185,79,255,0.08); color: var(--lav); font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; text-transform: uppercase; transition: all 0.25s; }
+.btn-s:hover { background: rgba(185,79,255,0.18); }
+
+.empty-st { text-align: center; padding: 50px; color: var(--dim); font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 2.5; }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<!-- Login Screen -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-hdr">
+      <div class="login-icon-wrap">🔐</div>
+      <div class="login-title">ADMIN ACCESS</div>
+      <div class="login-sub">FACEGATE SECURITY SYSTEM</div>
+    </div>
+    <div class="login-body">
+      <div class="login-tabs">
+        <button class="ltab active" onclick="switchTab('login')">👁 Face Login</button>
+        <button class="ltab" onclick="switchTab('register')">➕ Register Admin</button>
+      </div>
+
+      <!-- Login tab -->
+      <div id="tabLogin">
+        <div class="face-area" onclick="openLoginCam()">
+          <video id="loginVideo" autoplay muted playsinline style="display:none"></video>
+          <canvas id="loginCanvas" style="display:none"></canvas>
+          <img id="loginCaptured" src="" style="display:none">
+          <div class="face-scan" id="loginScan"></div>
+          <div class="face-ph" id="loginPh"><div style="font-size:36px;opacity:0.2;margin-bottom:8px">👁</div>Click to open camera<br>Face scan required</div>
+        </div>
+        <div class="btn-row">
+          <button class="lbtn" id="btnOL" onclick="openLoginCam()">📷 Camera</button>
+          <button class="lbtn pur" id="btnCL" onclick="captureLogin()" disabled>⚡ Scan</button>
+          <button class="lbtn" id="btnRL" onclick="retakeLogin()" style="display:none">🔄 Retake</button>
+        </div>
+        <button class="login-action-btn" onclick="doLogin()">🔓 VERIFY &amp; LOGIN</button>
+      </div>
+
+      <!-- Register tab -->
+      <div id="tabRegister" style="display:none">
+        <div class="field"><label>Admin Name</label><input id="adminRegName" type="text" placeholder="e.g. Prof. Kumar"></div>
+        <div class="face-area" onclick="openRegCam()" style="margin-bottom:12px">
+          <video id="regVideo" autoplay muted playsinline style="display:none"></video>
+          <canvas id="regCanvas" style="display:none"></canvas>
+          <img id="regCaptured" src="" style="display:none">
+          <div class="face-ph" id="regPh"><div style="font-size:36px;opacity:0.2;margin-bottom:8px">👤</div>Click to capture face</div>
+        </div>
+        <div class="btn-row">
+          <button class="lbtn" id="btnOR" onclick="openRegCam()">📷 Camera</button>
+          <button class="lbtn pur" id="btnCR" onclick="captureReg()" disabled>⚡ Capture</button>
+          <button class="lbtn" id="btnRR" onclick="retakeReg()" style="display:none">🔄 Retake</button>
+        </div>
+        <button class="login-action-btn" onclick="doRegAdmin()">💾 REGISTER AS ADMIN</button>
+      </div>
+
+      <div class="lmsg" id="loginMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="mainApp" style="display:none">
+  <header>
+    <div class="logo">
+      <div class="logo-ic">🔐</div>
+      FACEGATE <span class="logo-sub">ADMIN</span>
+    </div>
+    <div class="hright">
+      <span id="adminName"></span>
+      <div class="hbadge"><div class="pulse"></div>ADMIN SESSION</div>
+      <a href="/" class="back-link">← Main App</a>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="nav-grp">Admin Panel</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><span>📊</span> Dashboard</div>
+      <div class="nav-item" onclick="showPage('students',this)"><span>👥</span> All Students</div>
+      <div class="nav-item" onclick="showPage('logs',this)"><span>📋</span> Access Logs</div>
+      <div class="nav-item" onclick="showPage('settings',this)"><span>⚙️</span> Settings</div>
+      <div class="nav-item" onclick="showPage('admins',this)"><span>🔐</span> Manage Admins</div>
+      <button class="logout-btn" onclick="doLogout()">⏻ Logout</button>
+    </aside>
+
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-title"><span class="at">ADMIN</span>&nbsp;DASHBOARD<div class="thr"></div></div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-lbl">Total Registered</div><div class="stat-val" id="stStudents">—</div><div class="stat-sub">Students in database</div></div>
+          <div class="stat-card"><div class="stat-lbl">Granted Today</div><div class="stat-val green" id="stToday">—</div><div class="stat-sub">Successful entries today</div></div>
+          <div class="stat-card"><div class="stat-lbl">Denied Total</div><div class="stat-val red" id="stDenied">—</div><div class="stat-sub">Unauthorized attempts</div></div>
+          <div class="stat-card"><div class="stat-lbl">Total Scans</div><div class="stat-val" id="stScans">—</div><div class="stat-sub">All time</div></div>
+          <div class="stat-card"><div class="stat-lbl">Total Granted</div><div class="stat-val green" id="stGranted">—</div><div class="stat-sub">All time</div></div>
+          <div class="stat-card"><div class="stat-lbl">Admins</div><div class="stat-val gold" id="stAdmins">—</div><div class="stat-sub">Registered admins</div></div>
+        </div>
+        <div class="page-title" style="font-size:15px;margin-bottom:14px"><span class="at">RECENT</span>&nbsp;ACTIVITY<div class="thr"></div></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Name</th><th>ID</th><th>Status</th><th>Confidence</th></tr></thead><tbody id="recentLogs"></tbody></table></div>
+      </div>
+
+      <!-- STUDENTS -->
+      <div class="page" id="page-students">
+        <div class="toolbar">
+          <div class="page-title" style="margin:0"><span class="at">ALL</span>&nbsp;STUDENTS<div class="thr" style="width:60px"></div></div>
+          <div class="count-pill" id="stCount">Loading...</div>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Photo</th><th>Name</th><th>ID</th><th>Role</th><th>Last Seen</th><th>Today</th><th>Total Visits</th><th>Action</th></tr></thead><tbody id="stTable"></tbody></table></div>
+      </div>
+
+      <!-- LOGS -->
+      <div class="page" id="page-logs">
+        <div class="toolbar">
+          <div class="page-title" style="margin:0"><span class="at">ACCESS</span>&nbsp;LOGS<div class="thr" style="width:60px"></div></div>
+          <button class="btn-s" onclick="loadAdminLogs()">🔄 Refresh</button>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Timestamp</th><th>Name</th><th>ID</th><th>Role</th><th>Status</th><th>Confidence</th></tr></thead><tbody id="logsTable"></tbody></table></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="page-settings">
+        <div class="page-title"><span class="at">CAMERA</span>&nbsp;SETTINGS<div class="thr"></div></div>
+        <div class="two-col">
+          <div class="s-card">
+            <div class="s-title">Recognition Config</div>
+            <div class="f">
+              <label>Tolerance <span id="tolV">0.5</span></label>
+              <input type="range" id="tolerance" min="0.3" max="0.7" step="0.05" value="0.5" oninput="document.getElementById('tolV').textContent=this.value">
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px;font-family:monospace"><span>0.3 Strict</span><span>0.7 Lenient</span></div>
+            </div>
+            <div class="f">
+              <label>Scan Interval (sec) <span id="scanV">1.5</span></label>
+              <input type="range" id="scanInterval" min="0.5" max="5" step="0.5" value="1.5" oninput="document.getElementById('scanV').textContent=this.value">
+            </div>
+            <div class="f"><label>Camera Index</label>
+              <select id="camIdx"><option value="0">0 — Default / Built-in</option><option value="1">1 — USB Camera</option><option value="2">2 — Third Camera</option></select>
+            </div>
+            <button class="save-btn" onclick="saveSettings()">💾 Save Settings</button>
+            <div class="msg" id="settMsg"></div>
+          </div>
+          <div class="s-card">
+            <div class="s-title">Current Values</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2.8;color:var(--dim)">
+              <div>Tolerance &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span style="color:var(--purple)" id="curTol">—</span></div>
+              <div>Camera Index &nbsp;: <span style="color:var(--purple)" id="curCam">—</span></div>
+              <div>Scan Interval : <span style="color:var(--purple)" id="curScan">—</span>s</div>
+            </div>
+            <div style="margin-top:18px;padding:14px;background:rgba(185,79,255,0.05);border:1px solid rgba(185,79,255,0.2);border-radius:10px;font-size:12px;color:var(--dim);line-height:1.9">
+              💜 <strong style="color:var(--text)">Tips:</strong><br>
+              Lower tolerance = stricter matching<br>
+              0.4 recommended for high security<br>
+              Restart scanner after saving
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANAGE ADMINS -->
+      <div class="page" id="page-admins">
+        <div class="page-title"><span class="at">MANAGE</span>&nbsp;ADMINS<div class="thr"></div></div>
+        <div class="two-col">
+          <div class="s-card">
+            <div class="s-title">Register New Admin</div>
+            <div class="f"><label>Admin Name</label><input type="text" id="newAdminName" placeholder="e.g. Prof. Sharma" style="width:100%;background:rgba(7,5,15,0.8);border:1px solid var(--border);color:var(--text);padding:10px 14px;font-family:'Syne',sans-serif;font-size:13px;border-radius:8px;outline:none;transition:all 0.25s;"></div>
+            <div class="cap-box" onclick="openNewAdminCam()">
+              <video id="newAdminVideo" autoplay muted playsinline style="display:none"></video>
+              <canvas id="newAdminCanvas" style="display:none"></canvas>
+              <img id="newAdminCaptured" src="" style="display:none">
+              <div class="cap-ph" id="newAdminPh"><div style="font-size:28px;opacity:0.2;margin-bottom:6px">📷</div>Click to capture face</div>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:12px">
+              <button class="lbtn" onclick="openNewAdminCam()" style="flex:1">Camera</button>
+              <button class="lbtn pur" id="btnNAC" onclick="captureNewAdmin()" disabled style="flex:1">Capture</button>
+              <button class="lbtn" id="btnNAR" onclick="retakeNewAdmin()" style="display:none;flex:1">Retake</button>
+            </div>
+            <button class="save-btn" onclick="registerNewAdmin()">➕ Register Admin</button>
+            <div class="msg" id="adminMsg"></div>
+          </div>
+          <div class="s-card">
+            <div class="s-title">Access Info</div>
+            <div style="font-size:13px;color:var(--dim);line-height:2.2">
+              Admin login uses <strong style="color:var(--purple)">face recognition</strong> — no passwords.<br><br>
+              Admins can:<br>
+              &nbsp;💜 View all student data<br>
+              &nbsp;💜 See access logs (200 entries)<br>
+              &nbsp;💜 Change camera settings<br>
+              &nbsp;💜 Delete students<br>
+              &nbsp;💜 Add more admins<br><br>
+              <strong style="color:var(--red)">Students cannot access this panel.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+let adminToken = localStorage.getItem('adminToken') || '';
+let loginStream=null, regStream=null, newAdminStream=null;
+let loginImg=null, regImg=null, newAdminImg=null;
+
+async function checkSession() {
+  if(!adminToken) return;
+  const res = await fetch('/admin/check',{headers:{'X-Admin-Token':adminToken}});
+  const d   = await res.json();
+  if(d.ok) showApp();
+}
+checkSession();
+
+function switchTab(t) {
+  document.querySelectorAll('.ltab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));
+  document.getElementById('tabLogin').style.display    = t==='login'    ? 'block':'none';
+  document.getElementById('tabRegister').style.display = t==='register' ? 'block':'none';
+}
+
+async function openLoginCam() {
+  try {
+    loginStream = await navigator.mediaDevices.getUserMedia({video:true});
+    document.getElementById('loginVideo').srcObject=loginStream;
+    document.getElementById('loginVideo').style.display='block';
+    document.getElementById('loginPh').style.display='none';
+    document.getElementById('loginScan').classList.add('active');
+    document.getElementById('btnCL').disabled=false;
+    document.getElementById('btnOL').style.display='none';
+  } catch(e){ showLMsg('Camera error: '+e.message,false); }
+}
+function captureLogin() {
+  const v=document.getElementById('loginVideo'),c=document.getElementById('loginCanvas');
+  c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
+  loginImg=c.toDataURL('image/jpeg');
+  document.getElementById('loginCaptured').src=loginImg; document.getElementById('loginCaptured').style.display='block';
+  v.style.display='none'; document.getElementById('loginScan').classList.remove('active');
+  if(loginStream){loginStream.getTracks().forEach(t=>t.stop());loginStream=null;}
+  document.getElementById('btnCL').disabled=true; document.getElementById('btnRL').style.display='inline-flex';
+}
+function retakeLogin() {
+  loginImg=null; document.getElementById('loginCaptured').style.display='none';
+  document.getElementById('loginPh').style.display='flex'; document.getElementById('btnOL').style.display='inline-flex';
+  document.getElementById('btnCL').disabled=true; document.getElementById('btnRL').style.display='none';
+}
+async function doLogin() {
+  if(!loginImg){showLMsg('Capture your face first.',false);return;}
+  showLMsg('Verifying...',true);
+  const res=await fetch('/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:loginImg})});
+  const d=await res.json();
+  if(d.ok){adminToken=d.token;localStorage.setItem('adminToken',adminToken);showLMsg('✓ Welcome, '+d.name+'!',true);setTimeout(()=>{showApp();document.getElementById('adminName').textContent='👤 '+d.name;},800);}
+  else showLMsg('✗ '+d.error,false);
+}
+
+async function openRegCam() {
+  try {
+    regStream=await navigator.mediaDevices.getUserMedia({video:true});
+    document.getElementById('regVideo').srcObject=regStream; document.getElementById('regVideo').style.display='block';
+    document.getElementById('regPh').style.display='none'; document.getElementById('btnCR').disabled=false; document.getElementById('btnOR').style.display='none';
+  } catch(e){showLMsg('Camera error: '+e.message,false);}
+}
+function captureReg() {
+  const v=document.getElementById('regVideo'),c=document.getElementById('regCanvas');
+  c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
+  regImg=c.toDataURL('image/jpeg');
+  document.getElementById('regCaptured').src=regImg; document.getElementById('regCaptured').style.display='block';
+  v.style.display='none'; if(regStream){regStream.getTracks().forEach(t=>t.stop());regStream=null;}
+  document.getElementById('btnCR').disabled=true; document.getElementById('btnRR').style.display='inline-flex';
+}
+function retakeReg() {
+  regImg=null; document.getElementById('regCaptured').style.display='none';
+  document.getElementById('regPh').style.display='flex'; document.getElementById('btnOR').style.display='inline-flex';
+  document.getElementById('btnCR').disabled=true; document.getElementById('btnRR').style.display='none';
+}
+async function doRegAdmin() {
+  const name=document.getElementById('adminRegName').value.trim();
+  if(!name||!regImg){showLMsg('Name aur photo dono required.',false);return;}
+  const res=await fetch('/admin/register_admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,image:regImg})});
+  const d=await res.json(); showLMsg(d.ok?'✓ '+d.message:'✗ '+d.error,d.ok);
+}
+function showLMsg(text,ok){const el=document.getElementById('loginMsg');el.textContent=text;el.className='lmsg '+(ok?'ok':'err');el.style.display='block';}
+function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('mainApp').style.display='block';loadDashboard();}
+
+function showPage(name,el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active'); el.classList.add('active');
+  if(name==='dashboard') loadDashboard();
+  if(name==='students')  loadStudents();
+  if(name==='logs')      loadAdminLogs();
+  if(name==='settings')  loadSettings();
+}
+
+async function loadDashboard() {
+  const res=await fetch('/admin/stats',{headers:{'X-Admin-Token':adminToken}});
+  const d=await res.json();
+  document.getElementById('stStudents').textContent=d.total_students;
+  document.getElementById('stToday').textContent=d.today_granted;
+  document.getElementById('stDenied').textContent=d.total_denied;
+  document.getElementById('stScans').textContent=d.total_scans;
+  document.getElementById('stGranted').textContent=d.total_granted;
+  document.getElementById('stAdmins').textContent=d.admins_registered;
+  const logs=await(await fetch('/admin/logs',{headers:{'X-Admin-Token':adminToken}})).json();
+  const tbody=document.getElementById('recentLogs');
+  const recent=[...logs].reverse().slice(0,10);
+  if(!recent.length){tbody.innerHTML='<tr><td colspan="5" class="empty-st">No logs yet.</td></tr>';return;}
+  tbody.innerHTML=recent.map(l=>`<tr>
+    <td style="font-family:monospace;font-size:11px;color:var(--dim)">${l.timestamp}</td>
+    <td style="font-weight:700">${l.name}</td>
+    <td style="font-family:monospace;font-size:11px">${l.id||'—'}</td>
+    <td><span class="badge ${l.status_label==='GRANTED'?'granted':'denied'}">${l.status_label==='GRANTED'?'✓ GRANTED':'✗ DENIED'}</span></td>
+    <td>${l.confidence?l.confidence+'%':'—'}</td></tr>`).join('');
+}
+async function loadStudents() {
+  const data=await(await fetch('/admin/students',{headers:{'X-Admin-Token':adminToken}})).json();
+  document.getElementById('stCount').textContent=data.length+' students';
+  const tbody=document.getElementById('stTable');
+  if(!data.length){tbody.innerHTML='<tr><td colspan="8" class="empty-st">No students registered.</td></tr>';return;}
+  tbody.innerHTML=data.map(s=>`<tr>
+    <td><div class="s-av">${s.img?`<img src="${s.img}">`:'👤'}</div></td>
+    <td style="font-weight:700">${s.name}</td>
+    <td style="font-family:monospace;font-size:12px">${s.id}</td>
+    <td><span class="badge ${s.role}">${s.role.toUpperCase()}</span></td>
+    <td style="font-size:12px;color:var(--dim)">${s.last_seen}</td>
+    <td style="color:var(--purple);font-weight:700">${s.today}</td>
+    <td style="color:var(--dim)">${s.total_visits}</td>
+    <td><button class="del-btn" onclick="delStudent('${s.id}','${s.name}')">✕ Delete</button></td></tr>`).join('');
+}
+async function delStudent(id,name){if(!confirm('Delete '+name+'?'))return;await fetch('/admin/delete/'+id,{method:'DELETE',headers:{'X-Admin-Token':adminToken}});loadStudents();loadDashboard();}
+async function loadAdminLogs() {
+  const logs=await(await fetch('/admin/logs',{headers:{'X-Admin-Token':adminToken}})).json();
+  const tbody=document.getElementById('logsTable');
+  if(!logs.length){tbody.innerHTML='<tr><td colspan="6" class="empty-st">No logs yet.</td></tr>';return;}
+  tbody.innerHTML=[...logs].reverse().map(l=>`<tr>
+    <td style="font-family:monospace;font-size:11px;color:var(--dim)">${l.timestamp}</td>
+    <td style="font-weight:700">${l.name}</td>
+    <td style="font-family:monospace;font-size:11px">${l.id||'—'}</td>
+    <td style="font-size:12px;color:var(--dim)">${l.role||'—'}</td>
+    <td><span class="badge ${l.status_label==='GRANTED'?'granted':'denied'}">${l.status_label==='GRANTED'?'✓ GRANTED':'✗ DENIED'}</span></td>
+    <td>${l.confidence?`<div class="conf-row"><span style="font-family:monospace;font-size:11px">${l.confidence}%</span><div class="conf-bg"><div class="conf-fill" style="width:${l.confidence}%"></div></div></div>`:'—'}</td></tr>`).join('');
+}
+async function loadSettings() {
+  const d=await(await fetch('/admin/settings',{headers:{'X-Admin-Token':adminToken}})).json();
+  document.getElementById('tolerance').value=d.tolerance; document.getElementById('tolV').textContent=d.tolerance;
+  document.getElementById('camIdx').value=d.camera_index;
+  document.getElementById('scanInterval').value=d.scan_interval||1.5; document.getElementById('scanV').textContent=d.scan_interval||1.5;
+  document.getElementById('curTol').textContent=d.tolerance; document.getElementById('curCam').textContent=d.camera_index; document.getElementById('curScan').textContent=d.scan_interval||1.5;
+}
+async function saveSettings() {
+  const res=await fetch('/admin/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':adminToken},body:JSON.stringify({tolerance:parseFloat(document.getElementById('tolerance').value),camera_index:parseInt(document.getElementById('camIdx').value),scan_interval:parseFloat(document.getElementById('scanInterval').value)})});
+  const d=await res.json(); const msg=document.getElementById('settMsg');
+  msg.textContent=d.ok?'✓ Settings saved! Restart scanner to apply.':'✗ Error.';
+  msg.className='msg '+(d.ok?'ok':'err'); msg.style.display='block'; loadSettings();
+  setTimeout(()=>msg.style.display='none',3000);
+}
+async function openNewAdminCam() {
+  try {
+    newAdminStream=await navigator.mediaDevices.getUserMedia({video:true});
+    document.getElementById('newAdminVideo').srcObject=newAdminStream; document.getElementById('newAdminVideo').style.display='block';
+    document.getElementById('newAdminPh').style.display='none'; document.getElementById('btnNAC').disabled=false;
+  } catch(e){alert('Camera error: '+e.message);}
+}
+function captureNewAdmin() {
+  const v=document.getElementById('newAdminVideo'),c=document.getElementById('newAdminCanvas');
+  c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
+  newAdminImg=c.toDataURL('image/jpeg');
+  document.getElementById('newAdminCaptured').src=newAdminImg; document.getElementById('newAdminCaptured').style.display='block';
+  v.style.display='none'; if(newAdminStream){newAdminStream.getTracks().forEach(t=>t.stop());newAdminStream=null;}
+  document.getElementById('btnNAC').disabled=true; document.getElementById('btnNAR').style.display='inline-flex';
+}
+function retakeNewAdmin() {
+  newAdminImg=null; document.getElementById('newAdminCaptured').style.display='none';
+  document.getElementById('newAdminPh').style.display='flex'; document.getElementById('btnNAC').disabled=true; document.getElementById('btnNAR').style.display='none';
+}
+async function registerNewAdmin() {
+  const name=document.getElementById('newAdminName').value.trim();
+  if(!name||!newAdminImg){alert('Name aur photo required!');return;}
+  const res=await fetch('/admin/register_admin',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':adminToken},body:JSON.stringify({name,image:newAdminImg})});
+  const d=await res.json(); const msg=document.getElementById('adminMsg');
+  msg.textContent=d.ok?'✓ '+d.message:'✗ '+d.error; msg.className='msg '+(d.ok?'ok':'err'); msg.style.display='block';
+  if(d.ok){retakeNewAdmin();document.getElementById('newAdminName').value='';loadDashboard();}
+  setTimeout(()=>msg.style.display='none',3000);
+}
+async function doLogout() {
+  await fetch('/admin/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:adminToken})});
+  localStorage.removeItem('adminToken'); adminToken='';
+  document.getElementById('loginScreen').style.display='flex'; document.getElementById('mainApp').style.display='none';
+}
+</script>
+</body>
+</html>

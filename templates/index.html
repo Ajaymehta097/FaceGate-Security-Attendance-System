@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaceGate — Classroom Security</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Syne:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #07050f;
+  --bg2:     #0d0818;
+  --panel:   #110d1e;
+  --card:    #160f26;
+  --border:  #2a1a4a;
+  --purple:  #b94fff;
+  --pink:    #ff4fa3;
+  --violet:  #7c3aed;
+  --lav:     #c084fc;
+  --green:   #34d399;
+  --red:     #f43f5e;
+  --amber:   #fbbf24;
+  --text:    #e2d4f8;
+  --dim:     #5b4480;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Syne', sans-serif; min-height: 100vh; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 15%, rgba(124,58,237,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 85% 85%, rgba(255,79,163,0.09) 0%, transparent 60%);
+}
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(185,79,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(185,79,255,0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.scanlines { position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(185,79,255,0.012) 2px, rgba(185,79,255,0.012) 4px); }
+
+/* ── Header ── */
+header {
+  position: sticky; top: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 62px;
+  background: rgba(7,5,15,0.93); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+}
+.logo {
+  font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 900;
+  letter-spacing: 6px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 10px rgba(185,79,255,0.4));
+  display: flex; align-items: center; gap: 12px;
+}
+.logo-icon { width: 34px; height: 34px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--violet), var(--pink));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; box-shadow: 0 0 18px rgba(185,79,255,0.4); flex-shrink: 0; }
+.hbadge { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px;
+  padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); color: var(--dim);
+  display: flex; align-items: center; gap: 7px; }
+.hbadge.live { border-color: var(--green); color: var(--green); box-shadow: 0 0 10px rgba(52,211,153,0.15); }
+.pulse { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: p 1.4s infinite; }
+@keyframes p { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+#clock { font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  background: linear-gradient(135deg, var(--lav), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+/* ── Layout ── */
+.app {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 248px 1fr 298px;
+  height: calc(100vh - 62px); overflow: hidden;
+}
+
+/* ── Sidebar ── */
+.sidebar { background: rgba(17,13,30,0.85); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; padding: 18px 0; backdrop-filter: blur(10px); }
+.nav-grp { padding: 0 18px 5px; margin-top: 16px;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 3px; color: var(--dim); text-transform: uppercase; }
+.nav-item { display: flex; align-items: center; gap: 11px; padding: 12px 20px;
+  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--dim);
+  border-left: 3px solid transparent; transition: all 0.25s; position: relative; overflow: hidden; }
+.nav-item::after { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(185,79,255,0.08), transparent); opacity: 0; transition: opacity 0.25s; }
+.nav-item:hover { color: var(--lav); }
+.nav-item:hover::after { opacity: 1; }
+.nav-item.active { color: var(--purple); border-left-color: var(--purple); }
+.nav-item.active::after { opacity: 1; }
+.sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid var(--border); }
+.mini-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(42,26,74,0.4); }
+.mini-row:last-child { border-bottom: none; }
+.mini-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--dim); }
+.mini-val { font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+/* ── Main ── */
+.main-content { overflow-y: auto; padding: 26px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.main-content::-webkit-scrollbar { width: 4px; }
+.main-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.page { display: none; }
+.page.active { display: block; animation: pgIn 0.35s cubic-bezier(0.16,1,0.3,1); }
+@keyframes pgIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.page-title { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700;
+  letter-spacing: 3px; margin-bottom: 22px; display: flex; align-items: center; gap: 12px; color: var(--text); }
+.accent-text { background: linear-gradient(135deg, var(--purple), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.title-hr { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+/* ── Camera (Scanner) ── */
+.cam-wrap { position: relative; background: #000;
+  border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; aspect-ratio: 16/9; max-height: 420px;
+  box-shadow: 0 0 50px rgba(185,79,255,0.08), inset 0 0 40px rgba(0,0,0,0.6); }
+.cc { position: absolute; width: 26px; height: 26px; border-color: var(--purple); border-style: solid; z-index: 10; pointer-events: none; filter: drop-shadow(0 0 5px var(--purple)); }
+.cc.tl { top:10px; left:10px; border-width:2px 0 0 2px; border-radius:3px 0 0 0; }
+.cc.tr { top:10px; right:10px; border-width:2px 2px 0 0; border-radius:0 3px 0 0; }
+.cc.bl { bottom:10px; left:10px; border-width:0 0 2px 2px; border-radius:0 0 0 3px; }
+.cc.br { bottom:10px; right:10px; border-width:0 2px 2px 0; border-radius:0 0 3px 0; }
+.cam-off { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  color: var(--dim); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.scan-line { position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--purple), var(--pink), transparent);
+  filter: blur(1px); box-shadow: 0 0 10px var(--purple);
+  animation: sl 2.5s linear infinite; pointer-events: none; z-index: 6;
+  opacity: 0; transition: opacity 0.4s; }
+.scan-line.active { opacity: 1; }
+@keyframes sl { 0%{top:4%} 100%{top:96%} }
+.result-flash { position: absolute; bottom: 0; left: 0; right: 0;
+  max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.16,1,0.3,1); z-index: 20; }
+.result-flash.show { max-height: 120px; }
+.result-inner { padding: 16px 22px; font-family: 'Orbitron', monospace;
+  font-size: 15px; font-weight: 700; letter-spacing: 2px; backdrop-filter: blur(12px); }
+.result-flash.granted .result-inner { background: linear-gradient(135deg, rgba(52,211,153,0.93), rgba(16,185,129,0.87)); color:#fff; border-top: 2px solid rgba(255,255,255,0.25); }
+.result-flash.denied  .result-inner { background: linear-gradient(135deg, rgba(244,63,94,0.93), rgba(220,38,38,0.87)); color:#fff; border-top: 2px solid rgba(255,255,255,0.2); }
+.result-sub { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 400; opacity: 0.9; margin-top: 4px; letter-spacing: 0.5px; }
+
+/* Auto-scan status bar */
+.scan-status-bar {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(17,13,30,0.9); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 18px; margin-top: 14px;
+}
+.scan-indicator { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); flex-shrink: 0; }
+.scan-indicator.scanning { background: var(--purple); animation: p 1s infinite; box-shadow: 0 0 8px var(--purple); }
+.scan-indicator.granted  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+.scan-indicator.denied   { background: var(--red);    box-shadow: 0 0 8px var(--red); }
+.scan-status-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); flex: 1; }
+.scan-status-text.active  { color: var(--lav); }
+.scan-status-text.granted { color: var(--green); }
+.scan-status-text.denied  { color: var(--red); }
+.cam-btns { display: flex; gap: 12px; margin-top: 14px; }
+
+/* ── Buttons ── */
+.btn { padding: 11px 22px; border-radius: 9px; border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+  letter-spacing: 0.8px; cursor: pointer; text-transform: uppercase;
+  transition: all 0.25s; display: flex; align-items: center; gap: 8px; position: relative; overflow: hidden; }
+.btn::before { content:''; position:absolute; inset:0; background: linear-gradient(135deg, rgba(185,79,255,0.1), rgba(255,79,163,0.05)); opacity:0; transition:opacity 0.25s; }
+.btn:hover::before { opacity:1; }
+.btn:hover { border-color: var(--purple); color: var(--lav); }
+.btn.primary { border-color: var(--purple); color: var(--lav); background: rgba(185,79,255,0.08); box-shadow: 0 0 18px rgba(185,79,255,0.1); }
+.btn.primary:hover { box-shadow: 0 0 28px rgba(185,79,255,0.2); border-color: var(--pink); }
+.btn.success { border-color: var(--green); color: var(--green); }
+.btn.success:hover { background: rgba(52,211,153,0.08); }
+.btn.danger  { border-color: var(--red); color: var(--red); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── Register Form ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.form-card { background: rgba(22,15,38,0.75); border: 1px solid var(--border);
+  border-radius: 14px; padding: 24px; backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+.form-card-title { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: 3px; color: var(--purple); text-transform: uppercase;
+  margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; }
+.field { margin-bottom: 15px; }
+.field label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; margin-bottom: 6px; }
+.field input, .field select { width: 100%; background: rgba(7,5,15,0.8); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 14px; font-family: 'Syne', sans-serif; font-size: 13px;
+  border-radius: 8px; outline: none; transition: all 0.25s; }
+.field input:focus, .field select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(185,79,255,0.1); }
+.field select option { background: var(--panel); }
+
+/* Register camera box — click required */
+.cap-box { width: 100%; aspect-ratio: 4/3; background: rgba(7,5,15,0.8);
+  border: 2px dashed var(--border); border-radius: 10px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.25s; position: relative; }
+.cap-box:hover { border-color: var(--purple); box-shadow: 0 0 20px rgba(185,79,255,0.1); }
+.cap-box img, .cap-box video { width: 100%; height: 100%; object-fit: cover; }
+.cap-ph { text-align: center; color: var(--dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 2.2; pointer-events: none; }
+.cap-note { font-size: 10px; color: var(--purple); margin-top: 6px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
+
+.form-msg { padding: 10px 14px; border-radius: 8px; margin-top: 14px; font-size: 13px; display: none; font-family: 'JetBrains Mono', monospace; }
+.form-msg.ok  { background: rgba(52,211,153,0.1); border: 1px solid var(--green); color: var(--green); }
+.form-msg.err { background: rgba(244,63,94,0.1); border: 1px solid var(--red); color: var(--red); }
+
+/* ── Students Grid ── */
+.students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 16px; }
+.student-card { background: rgba(22,15,38,0.75); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden; transition: all 0.3s; position: relative;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.student-card:hover { border-color: var(--purple); transform: translateY(-3px); box-shadow: 0 10px 34px rgba(185,79,255,0.15); }
+.s-photo { width: 100%; aspect-ratio: 4/3; overflow: hidden; background: var(--bg2); display: flex; align-items: center; justify-content: center; }
+.s-photo img { width: 100%; height: 100%; object-fit: cover; }
+.s-info { padding: 14px; }
+.s-name { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 4px; }
+.s-id   { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); }
+.s-role { display: inline-block; margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; padding: 3px 10px; border-radius: 20px; }
+.s-role.student { background: rgba(185,79,255,0.1); border: 1px solid rgba(185,79,255,0.3); color: var(--lav); }
+.s-role.staff   { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: var(--amber); }
+.s-role.admin   { background: rgba(255,79,163,0.1); border: 1px solid rgba(255,79,163,0.3); color: var(--pink); }
+.s-del { position: absolute; top: 10px; right: 10px; background: rgba(7,5,15,0.75); border: 1px solid var(--red); color: var(--red); width: 28px; height: 28px; border-radius: 7px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.2s; backdrop-filter: blur(4px); }
+.student-card:hover .s-del { opacity: 1; }
+
+/* Role filter tabs */
+.role-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.rtab { padding: 7px 18px; border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; color: var(--dim); font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 1.5px; cursor: pointer; text-transform: uppercase; transition: all 0.25s; }
+.rtab:hover { border-color: var(--purple); color: var(--lav); }
+.rtab.active { border-color: var(--purple); background: rgba(185,79,255,0.1); color: var(--purple); }
+
+/* ── Logs ── */
+.tbl-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
+.log-tbl { width: 100%; border-collapse: collapse; }
+.log-tbl th { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2.5px; color: var(--dim); text-transform: uppercase; text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); background: rgba(22,15,38,0.6); }
+.log-tbl td { padding: 12px 16px; border-bottom: 1px solid rgba(42,26,74,0.3); font-size: 13px; }
+.log-tbl tr:last-child td { border-bottom: none; }
+.log-tbl tr:hover td { background: rgba(185,79,255,0.03); }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; }
+.badge.granted { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.35); color: var(--green); }
+.badge.denied  { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.35); color: var(--red); }
+.conf-row { display: inline-flex; align-items: center; gap: 8px; }
+.conf-bg { width: 60px; height: 3px; background: var(--border); border-radius: 2px; }
+.conf-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
+
+/* ── Attendance ── */
+.att-sc { background:rgba(22,15,38,0.75);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+.att-sl { font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:10px; }
+.att-sv { font-family:'Orbitron',monospace;font-size:34px;font-weight:700; }
+.att-sv.purple { background:linear-gradient(135deg,var(--purple),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+.att-sv.green  { background:linear-gradient(135deg,var(--green),#10b981);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+.att-sv.red    { background:linear-gradient(135deg,var(--red),#dc2626);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+.att-bar-bg { width:80px;height:4px;background:var(--border);border-radius:2px;display:inline-block;vertical-align:middle;margin-left:8px; }
+.att-bar-fill { height:100%;border-radius:2px;background:linear-gradient(90deg,var(--purple),var(--pink)); }
+
+/* ── Alerts ── */
+.alerts-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px; }
+.alert-card { background:rgba(22,15,38,0.75);border:1px solid rgba(244,63,94,0.3);border-radius:14px;overflow:hidden;transition:all 0.3s;box-shadow:0 4px 16px rgba(244,63,94,0.08); }
+.alert-card:hover { border-color:var(--red);transform:translateY(-3px);box-shadow:0 10px 30px rgba(244,63,94,0.15); }
+.alert-img { width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--bg2);display:flex;align-items:center;justify-content:center; }
+.alert-img img { width:100%;height:100%;object-fit:cover; }
+.alert-info { padding:12px; }
+.alert-time { font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red); }
+.alert-label { font-size:12px;color:var(--dim);margin-top:4px; }
+
+/* ── Profile overlay ── */
+.profile-overlay { position:fixed;inset:0;z-index:300;background:rgba(7,5,15,0.85);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;animation:pgIn 0.3s ease; }
+.profile-card { width:380px;background:rgba(22,15,38,0.95);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 0 60px rgba(185,79,255,0.2); }
+.profile-top { background:linear-gradient(135deg,rgba(185,79,255,0.15),rgba(255,79,163,0.1));padding:24px;display:flex;gap:18px;align-items:center;border-bottom:1px solid var(--border); }
+.profile-photo { width:72px;height:72px;border-radius:14px;object-fit:cover;border:2px solid var(--purple);box-shadow:0 0 16px rgba(185,79,255,0.3); }
+.profile-name { font-family:'Orbitron',monospace;font-size:16px;font-weight:700;background:linear-gradient(135deg,var(--purple),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+.profile-role { font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase; }
+.profile-body { padding:20px; }
+.prow { display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(42,26,74,0.4);font-size:13px; }
+.prow:last-child { border-bottom:none; }
+.pk { font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase; }
+.pv { font-weight:600;color:var(--text); }
+.pclose { width:100%;padding:12px;background:linear-gradient(135deg,rgba(185,79,255,0.1),rgba(255,79,163,0.07));border:1px solid var(--purple);color:var(--lav);border-radius:0 0 20px 20px;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.25s; }
+.pclose:hover { background:linear-gradient(135deg,rgba(185,79,255,0.2),rgba(255,79,163,0.14)); }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.count-pill { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; background: rgba(22,15,38,0.5); }
+.empty-st { text-align:center;padding:50px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2.5; }
+
+
+/* ── Back Button ── */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 16px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--dim); font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 1px; cursor: pointer;
+  transition: all 0.22s; text-transform: uppercase; margin-bottom: 18px;
+}
+.back-btn:hover {
+  border-color: var(--purple); color: var(--lav);
+  background: rgba(185,79,255,0.07);
+  transform: translateX(-2px);
+}
+.back-btn span { font-size: 13px; }
+
+/* ── Right Panel ── */
+.right-panel { background: rgba(17,13,30,0.85); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; backdrop-filter: blur(10px); }
+.rp-head { padding: 18px 20px; border-bottom: 1px solid var(--border);
+  font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700;
+  letter-spacing: 3px; color: var(--dim); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.rp-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple); animation: p 1.4s infinite; }
+.rp-body { flex: 1; overflow-y: auto; padding: 14px; scrollbar-width: none; }
+.rp-body::-webkit-scrollbar { display: none; }
+.act-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(42,26,74,0.4); animation: slideR 0.3s cubic-bezier(0.16,1,0.3,1); }
+@keyframes slideR { from{opacity:0;transform:translateX(14px)} to{opacity:1;transform:translateX(0)} }
+.act-ic { width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.act-ic.granted { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); }
+.act-ic.denied  { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); }
+.act-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.act-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--dim); }
+.status-sec { padding: 16px 20px; border-top: 1px solid var(--border); }
+.status-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; margin-bottom: 10px; }
+.status-pill { padding: 10px 16px; border-radius: 9px; font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; transition: all 0.3s; }
+.status-pill.idle    { background: rgba(91,68,128,0.1); border: 1px solid var(--border); color: var(--dim); }
+.status-pill.granted { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); color: var(--green); }
+.status-pill.denied  { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: var(--red); }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">👁</div>
+    FACEGATE
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="hbadge" id="camBadge"><div class="pulse"></div>CAMERA OFF</div>
+    <div class="hbadge live"><div class="pulse"></div>ONLINE</div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="nav-grp">Navigation</div>
+    <div class="nav-item active" onclick="showPage('scanner',this)"><span>📡</span> Live Scanner</div>
+    <div class="nav-item" onclick="showPage('register',this)"><span>➕</span> Register Person</div>
+    <div class="nav-item" onclick="showPage('students',this)"><span>👥</span> Database</div>
+    <div class="nav-item" onclick="showPage('logs',this)"><span>📋</span> Access Logs</div>
+    <div class="nav-grp">Features</div>
+    <div class="nav-item" onclick="showPage('attendance',this)"><span>📅</span> Attendance</div>
+    <div class="nav-item" onclick="showPage('alerts',this)"><span>🚨</span> Unknown Alerts</div>
+    <div class="nav-item" onclick="showPage('qrscan',this)"><span>📱</span> QR Scanner</div>
+    <div class="nav-grp">Admin</div>
+    <div class="nav-item" onclick="window.location='/admin'"><span>🔐</span> Admin Panel</div>
+    <div class="sidebar-footer">
+      <div class="mini-row"><span class="mini-lbl">REGISTERED</span><span class="mini-val" id="sTotal">0</span></div>
+      <div class="mini-row"><span class="mini-lbl">TODAY</span><span class="mini-val" id="sToday">0</span></div>
+      <div class="mini-row"><span class="mini-lbl">TOTAL LOGS</span><span class="mini-val" id="sLogs">0</span></div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ═══════════════════════════════════════════
+         SCANNER — Auto scan, no click needed
+    ════════════════════════════════════════════ -->
+    <div class="page active" id="page-scanner">
+      <div class="page-title"><span class="accent-text">LIVE</span>&nbsp;SCANNER<div class="title-hr"></div></div>
+
+      <div class="cam-wrap">
+        <div class="cc tl"></div><div class="cc tr"></div>
+        <div class="cc bl"></div><div class="cc br"></div>
+        <div class="cam-off" id="cameraOff">
+          <div style="font-size:48px;opacity:0.15">📷</div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;">Camera Offline</span>
+          <span style="font-size:11px;opacity:0.5;font-family:'JetBrains Mono',monospace;">Press START to begin scanning</span>
+        </div>
+        <img id="cameraFeed" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+        <div class="scan-line" id="scanLine"></div>
+        <div class="result-flash" id="resultFlash">
+          <div class="result-inner">
+            <div id="resultTitle"></div>
+            <div class="result-sub" id="resultSub"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto-scan status — no capture button -->
+      <div class="scan-status-bar" id="scanStatusBar" style="display:none;">
+        <div class="scan-indicator scanning" id="scanIndicator"></div>
+        <div class="scan-status-text active" id="scanStatusText">Scanning automatically… Saamne aao</div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim)" id="scanTimer">—</span>
+      </div>
+
+      <div class="cam-btns">
+        <button class="btn primary" id="btnStart" onclick="startScanner()">▶ Start Scanner</button>
+        <button class="btn danger"  id="btnStop"  onclick="stopScanner()" disabled>■ Stop</button>
+      </div>
+
+      <div style="margin-top:12px;padding:10px 16px;background:rgba(185,79,255,0.05);border:1px solid rgba(185,79,255,0.15);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">
+        💡 Auto-scan mode — koi click nahi chahiye. Camera ke saamne aao, scan ho jaayega.
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         REGISTER — Click required to capture
+    ════════════════════════════════════════════ -->
+    <div class="page" id="page-register">
+      <button class="back-btn" onclick="goBack('scanner')"><span>←</span> Back to Live Scanner</button>
+      <div class="page-title"><span class="accent-text">REGISTER</span>&nbsp;PERSON<div class="title-hr"></div></div>
+      <div class="two-col">
+        <!-- Details -->
+        <div class="form-card">
+          <div class="form-card-title">✏️ Person Details</div>
+          <div class="field"><label>Full Name</label><input id="regName" type="text" placeholder="e.g. Rahul Sharma"></div>
+          <div class="field"><label>ID / Roll Number</label><input id="regId" type="text" placeholder="e.g. CS2024001"></div>
+          <div class="field"><label>Department</label><input id="regDept" type="text" placeholder="e.g. CSE, MBA, Science"></div>
+          <div class="field">
+            <label>Role</label>
+            <select id="regRole">
+              <option value="student">👨‍🎓 Student</option>
+              <option value="staff">👨‍🏫 Staff</option>
+              <option value="admin">🔐 Admin</option>
+            </select>
+          </div>
+          <button class="btn success" onclick="submitRegister()" style="width:100%;justify-content:center;margin-top:4px;">
+            💾 Save to Database
+          </button>
+          <div class="form-msg" id="formMsg"></div>
+
+        <!-- QR Code shown after successful registration -->
+        <div id="qrModal" style="display:none;margin-top:16px;background:rgba(185,79,255,0.06);border:1px solid rgba(185,79,255,0.25);border-radius:12px;padding:18px;text-align:center;">
+          <div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;color:var(--purple);margin-bottom:12px;">✅ REGISTERED — QR CODE</div>
+          <img id="qrCodeImg" src="" style="width:160px;height:160px;border-radius:10px;border:2px solid var(--purple);background:#fff;padding:4px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-top:10px;" id="qrCodeId"></div>
+          <a id="qrDownloadBtn" download="qr.png" style="display:inline-block;margin-top:10px;padding:8px 20px;border:1px solid var(--purple);border-radius:8px;color:var(--lav);font-family:'JetBrains Mono',monospace;font-size:11px;text-decoration:none;">⬇ Download QR</a>
+        </div>
+        </div>
+
+        <!-- Camera — Click required -->
+        <div class="form-card">
+          <div class="form-card-title">📸 Capture Face
+            <span style="font-size:9px;color:var(--amber);margin-left:4px;">CLICK REQUIRED</span>
+          </div>
+
+          <div class="cap-box" id="capBox" onclick="handleCapBoxClick()">
+            <video id="captureVideo" autoplay muted playsinline style="display:none;width:100%;height:100%;object-fit:cover;"></video>
+            <canvas id="captureCanvas" style="display:none;"></canvas>
+            <img id="capturedImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+            <div class="cap-ph" id="capPh">
+              <div style="font-size:32px;opacity:0.25;margin-bottom:8px">👤</div>
+              Yahan click karein<br>Camera kholne ke liye
+              <div class="cap-note">📸 Photo manually leni padegi</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="btn" id="btnOpenCam" onclick="openRegisterCam()" style="flex:1;justify-content:center;">
+              📷 Camera Kholo
+            </button>
+            <button class="btn primary" id="btnCapture" onclick="captureRegisterPhoto()" disabled style="flex:1;justify-content:center;">
+              ⚡ Photo Lo
+            </button>
+            <button class="btn" id="btnRetake" onclick="retakeRegisterPhoto()" style="display:none;flex:1;justify-content:center;">
+              🔄 Dobara Lo
+            </button>
+          </div>
+
+          <div style="margin-top:12px;padding:10px 14px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(251,191,36,0.7);line-height:1.8;">
+            ⚠️ Register ke liye:<br>
+            1. Camera kholo<br>
+            2. Chehra saamne rakho<br>
+            3. "Photo Lo" button dabao
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATABASE -->
+    <div class="page" id="page-students">
+      <button class="back-btn" onclick="goBack('scanner')"><span>←</span> Back to Scanner</button>
+      <div class="toolbar">
+        <div class="page-title" style="margin:0"><span class="accent-text">DATABASE</span><div class="title-hr" style="width:60px"></div></div>
+        <div class="count-pill" id="studentCount">0 registered</div>
+      </div>
+      <div class="role-tabs">
+        <button class="rtab active" onclick="loadStudents('all',this)">All</button>
+        <button class="rtab" onclick="loadStudents('student',this)">Students</button>
+        <button class="rtab" onclick="loadStudents('staff',this)">Staff</button>
+        <button class="rtab" onclick="loadStudents('admin',this)">Admin</button>
+      </div>
+      <div class="students-grid" id="studentsGrid">
+        <div class="empty-st">No records found.</div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="page" id="page-attendance">
+      <button class="back-btn" onclick="goBack('scanner')"><span>←</span> Back to Scanner</button>
+      <div class="toolbar">
+        <div class="page-title" style="margin:0"><span class="accent-text">AUTO</span>&nbsp;ATTENDANCE<div class="title-hr" style="width:60px"></div></div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div class="count-pill" id="attCount">Loading...</div>
+          <button class="btn primary" onclick="exportExcel()" style="padding:9px 16px;font-size:12px;">📥 Export Excel</button>
+          <button class="btn" onclick="exportMonthly()" style="padding:9px 16px;font-size:12px;">📅 Monthly Report</button>
+          <button class="btn" onclick="loadAttendance()" style="padding:9px 16px;font-size:12px;">🔄 Refresh</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;">
+        <div class="att-sc"><div class="att-sl">TOTAL STUDENTS</div><div class="att-sv purple" id="attTotal">—</div></div>
+        <div class="att-sc"><div class="att-sl">PRESENT TODAY</div><div class="att-sv green" id="attToday">—</div></div>
+        <div class="att-sc"><div class="att-sl">ABSENT TODAY</div><div class="att-sv red" id="attAbsent">—</div></div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="log-tbl">
+          <thead><tr>
+            <th>Photo</th><th>Name</th><th>Roll No</th><th>Department</th><th>Role</th>
+            <th>Present Days</th><th>Attendance %</th><th>Today</th><th>Last Seen</th>
+          </tr></thead>
+          <tbody id="attBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="page" id="page-alerts">
+      <button class="back-btn" onclick="goBack('scanner')"><span>←</span> Back to Scanner</button>
+      <div class="toolbar">
+        <div class="page-title" style="margin:0"><span class="accent-text">UNKNOWN</span>&nbsp;ALERTS<div class="title-hr" style="width:60px"></div></div>
+        <button class="btn primary" onclick="loadAlerts()" style="padding:9px 16px;font-size:12px;">🔄 Refresh</button>
+      </div>
+      <div style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.25);border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:rgba(244,63,94,0.8);display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px">⚠️</span>
+        <span>Yeh screenshots automatically save hote hain jab koi <strong>unregistered person</strong> camera ke saamne aata hai.</span>
+      </div>
+      <div class="alerts-grid" id="alertsGrid">
+        <div class="empty-st">Koi unknown alert nahi abhi tak.</div>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="page" id="page-logs">
+      <button class="back-btn" onclick="goBack('scanner')"><span>←</span> Back to Scanner</button>
+      <div class="toolbar">
+        <div class="page-title" style="margin:0"><span class="accent-text">ACCESS</span>&nbsp;LOGS<div class="title-hr" style="width:60px"></div></div>
+        <button class="btn primary" onclick="loadLogs()" style="padding:8px 16px;font-size:12px;">🔄 Refresh</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="log-tbl">
+          <thead><tr><th>Timestamp</th><th>Name</th><th>ID</th><th>Role</th><th>Status</th><th>Confidence</th></tr></thead>
+          <tbody id="logsBody">
+            <tr><td colspan="6" style="text-align:center;padding:50px;color:var(--dim);font-family:monospace;font-size:12px;">No logs yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- QR SCANNER PAGE -->
+    <div class="page" id="page-qrscan">
+      <button class="back-btn" onclick="goBack('scanner')"><span>←</span> Back to Live Scanner</button>
+      <div class="page-title"><span class="accent-text">QR</span>&nbsp;SCANNER<div class="title-hr"></div></div>
+      <div style="background:rgba(185,79,255,0.06);border:1px solid rgba(185,79,255,0.2);border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:var(--lav);display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px">📱</span>
+        <span>Face recognition fail ho toh <strong>QR code scan</strong> se entry milegi. Register ke waqt QR generate hota hai.</span>
+      </div>
+      <div class="two-col">
+        <!-- QR Photo Upload Card -->
+        <div class="form-card">
+          <div class="form-card-title">🖼️ QR Photo Upload karke Scan</div>
+
+          <!-- Drop zone -->
+          <div id="qrDropZone"
+               onclick="document.getElementById('qrFileInput').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--purple)'"
+               ondragleave="this.style.borderColor=''"
+               ondrop="handleQRDrop(event)"
+               style="width:100%;aspect-ratio:4/3;background:rgba(7,5,15,0.8);
+                      border:2px dashed var(--border);border-radius:12px;
+                      display:flex;flex-direction:column;align-items:center;
+                      justify-content:center;gap:10px;cursor:pointer;
+                      transition:all 0.25s;position:relative;overflow:hidden;">
+            <img id="qrUploadPreview" src="" style="display:none;width:100%;height:100%;object-fit:contain;border-radius:10px;">
+            <div id="qrDropPh" style="text-align:center;pointer-events:none;">
+              <div style="font-size:40px;opacity:0.2;margin-bottom:8px">📷</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">
+                Click karein ya photo drag karein<br>
+                <span style="color:var(--purple);font-size:10px;">QR code wali photo upload karo</span>
+              </div>
+            </div>
+          </div>
+          <input type="file" id="qrFileInput" accept="image/*" style="display:none" onchange="handleQRFileSelect(event)">
+          <canvas id="qrCanvas" style="display:none;"></canvas>
+
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="btn primary" onclick="document.getElementById('qrFileInput').click()" style="flex:1;justify-content:center;">
+              📂 Photo Upload
+            </button>
+            <button class="btn success" id="btnQRVerify" onclick="readAndVerifyQR()" disabled style="flex:1;justify-content:center;">
+              ✅ Verify QR
+            </button>
+            <button class="btn" id="btnQRClear" onclick="clearQRUpload()" style="display:none;padding:11px 14px;">
+              🗑️
+            </button>
+          </div>
+          <div id="qrScanMsg" style="margin-top:12px;display:none;padding:12px 16px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:12px;"></div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-title">⌨️ Manual QR Code Entry</div>
+          <div class="field"><label>QR Code Data</label>
+            <input id="qrManualInput" type="text" placeholder="FACEGATE|CS001|Name|student|CSE">
+          </div>
+          <button class="btn success" onclick="verifyQRManual()" style="width:100%;justify-content:center;">✅ Verify & Grant Entry</button>
+          <div id="qrManualMsg" style="margin-top:12px;display:none;padding:12px 16px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:12px;"></div>
+          <div style="margin-top:16px;">
+            <div class="form-card-title">📋 QR Result</div>
+            <div id="qrResultCard" style="display:none;background:rgba(52,211,153,0.05);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:16px;">
+              <div style="display:flex;gap:14px;align-items:center;">
+                <img id="qrPersonImg" src="" style="width:60px;height:60px;border-radius:10px;object-fit:cover;border:2px solid var(--purple);display:none;">
+                <div style="font-size:18px;opacity:0.3;display:none" id="qrPersonPlaceholder">👤</div>
+                <div>
+                  <div id="qrPersonName" style="font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--green);"></div>
+                  <div id="qrPersonId"   style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:3px;"></div>
+                  <div id="qrPersonRole" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--lav);margin-top:3px;"></div>
+                  <div id="qrPersonAtt"  style="font-size:12px;color:var(--purple);margin-top:4px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Right Panel -->
+  <aside class="right-panel">
+    <div class="rp-head"><div class="rp-dot"></div>LIVE ACTIVITY</div>
+    <div class="rp-body" id="actFeed">
+      <div class="empty-st">Start scanner to see live detections.</div>
+    </div>
+    <div class="status-sec">
+      <div class="status-lbl">Last Detection</div>
+      <div class="status-pill idle" id="lastStatus"><span>⬤</span> Waiting...</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+
+// ── Back navigation ────────────────────────────────────────────────────────
+const pageHistory = ['scanner'];
+
+function goBack(target) {
+  // Go to target page using the nav item
+  const navItems = document.querySelectorAll('.nav-item');
+  let targetNav = null;
+  navItems.forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + target + "'")) {
+      targetNav = n;
+    }
+  });
+  if (targetNav) showPage(target, targetNav);
+}
+
+// ── Clock ──────────────────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-GB', {hour12: false});
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── Page navigation ────────────────────────────────────────────────────────
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'students')   loadStudents('all', document.querySelector('.rtab'));
+  if (name === 'logs')       loadLogs();
+  if (name === 'attendance') loadAttendance();
+  if (name === 'alerts')     loadAlerts();
+  if (name === 'qrscan')     initQRPage();
+  // Stop scanner if leaving scanner page
+  if (name !== 'scanner' && scannerActive) stopScanner();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCANNER — AUTO SCAN (no click needed)
+// ═══════════════════════════════════════════════════════════════════════════
+let scannerActive = false;
+let statusPoller  = null;
+let scanStartTime = null;
+let timerInterval = null;
+let lastResultTime = 0;
+
+function startScanner() {
+  scannerActive = true;
+  scanStartTime = Date.now();
+
+  // Show feed, hide offline placeholder
+  document.getElementById('cameraOff').style.display = 'none';
+  const feed = document.getElementById('cameraFeed');
+  feed.src = '/video_feed?' + Date.now();
+  feed.style.display = 'block';
+
+  // Scan line animation
+  document.getElementById('scanLine').classList.add('active');
+
+  // Buttons
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnStop').disabled  = false;
+
+  // Camera badge
+  const b = document.getElementById('camBadge');
+  b.className = 'hbadge live';
+  b.innerHTML = '<div class="pulse"></div>AUTO SCANNING';
+
+  // Status bar
+  const bar = document.getElementById('scanStatusBar');
+  bar.style.display = 'flex';
+  setStatus('scanning', 'Scanning automatically… Saamne aao');
+
+  // Timer
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - scanStartTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2,'0');
+    const s = String(elapsed % 60).padStart(2,'0');
+    document.getElementById('scanTimer').textContent = m + ':' + s;
+  }, 1000);
+
+  // Poll backend for results — no user click needed
+  statusPoller = setInterval(pollStatus, 800);
+}
+
+function stopScanner() {
+  scannerActive = false;
+  fetch('/stop_camera', {method: 'POST'});
+
+  const feed = document.getElementById('cameraFeed');
+  feed.src = ''; feed.style.display = 'none';
+  document.getElementById('cameraOff').style.display = 'flex';
+  document.getElementById('scanLine').classList.remove('active');
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStop').disabled  = true;
+  document.getElementById('scanStatusBar').style.display = 'none';
+
+  const b = document.getElementById('camBadge');
+  b.className = 'hbadge';
+  b.innerHTML = '<div class="pulse"></div>CAMERA OFF';
+
+  if (statusPoller)  { clearInterval(statusPoller);  statusPoller  = null; }
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+  setStatus('idle', 'Scanner stopped');
+}
+
+function setStatus(type, text) {
+  const ind  = document.getElementById('scanIndicator');
+  const txt  = document.getElementById('scanStatusText');
+  ind.className  = 'scan-indicator ' + type;
+  txt.className  = 'scan-status-text ' + (type === 'idle' ? '' : type);
+  txt.textContent = text;
+}
+
+function pollStatus() {
+  fetch('/status')
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === 'idle') {
+        setStatus('scanning', 'Scanning automatically… Saamne aao');
+        return;
+      }
+      // Deduplicate — show each result only once
+      const now = Date.now();
+      if (now - lastResultTime < 3500) return;
+      lastResultTime = now;
+
+      showScanResult(d);
+      addActivity(d);
+      updateStatusPill(d);
+    })
+    .catch(() => {});
+}
+
+// ── Alarm sound (Web Audio API — no file needed) ───────────────────────────
+function playAlarm() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // 3 sharp beeps — urgent alarm sound
+    [0, 0.35, 0.70].forEach(startAt => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type      = 'square';
+      osc.frequency.setValueAtTime(880, ctx.currentTime + startAt);          // High pitch
+      osc.frequency.setValueAtTime(440, ctx.currentTime + startAt + 0.15);   // Drop
+
+      gain.gain.setValueAtTime(0.6, ctx.currentTime + startAt);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startAt + 0.28);
+
+      osc.start(ctx.currentTime + startAt);
+      osc.stop(ctx.currentTime + startAt + 0.30);
+    });
+  } catch(e) {
+    console.warn('Audio not supported:', e);
+  }
+}
+
+// ── Success sound (soft beep) ──────────────────────────────────────────────
+function playSuccess() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(660, ctx.currentTime);
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+function showScanResult(d) {
+  const flash = document.getElementById('resultFlash');
+  flash.className = 'result-flash';
+
+  if (d.status === 'granted') {
+    flash.classList.add('granted', 'show');
+    document.getElementById('resultTitle').textContent =
+      '✓  YOU CAN ENTER  — ' + d.name.toUpperCase();
+    document.getElementById('resultSub').textContent =
+      'Match: ' + d.confidence + '%  ·  ' + (d.role || '').toUpperCase() +
+      (d.dept ? '  ·  ' + d.dept : '');
+    setStatus('granted', '✓ Access granted — ' + d.name);
+    playSuccess(); // soft beep for granted
+    speakGreeting(d.name, d.role, true); // 🔊 voice greeting
+
+    // If admin detected → redirect to admin panel after 2s
+    if (d.is_admin) {
+      setStatus('granted', '✓ ADMIN detected — redirecting to Admin Panel…');
+      setTimeout(() => { window.location.href = '/admin'; }, 2000);
+    }
+  } else {
+    flash.classList.add('denied', 'show');
+    document.getElementById('resultTitle').textContent = '✗  YOU CANNOT ENTER';
+    document.getElementById('resultSub').textContent   = 'Face not registered in system.';
+    setStatus('denied', '✗ Unknown person — access denied');
+    playAlarm(); // 🚨 3 beep alarm for unknown person!
+    speakGreeting('', '', false); // voice denied
+  }
+
+  setTimeout(() => {
+    flash.classList.remove('show');
+    setStatus('scanning', 'Scanning automatically… Saamne aao');
+  }, 3500);
+}
+
+function addActivity(d) {
+  const feed  = document.getElementById('actFeed');
+  const empty = feed.querySelector('.empty-st');
+  if (empty) empty.remove();
+
+  const now  = new Date().toLocaleTimeString('en-GB', {hour12: false});
+  const item = document.createElement('div');
+  item.className = 'act-item';
+
+  if (d.status === 'granted') {
+    item.innerHTML = `
+      <div class="act-ic granted" style="cursor:pointer" onclick="showProfile('${d.id}')">✓</div>
+      <div>
+        <div class="act-name" style="cursor:pointer" onclick="showProfile('${d.id}')">${d.name}</div>
+        <div class="act-meta">${now} · ${d.confidence}% · ${(d.role||'').toUpperCase()}</div>
+      </div>`;
+  } else {
+    item.innerHTML = `
+      <div class="act-ic denied">✗</div>
+      <div>
+        <div class="act-name" style="color:var(--red)">UNKNOWN</div>
+        <div class="act-meta">${now} · Access denied</div>
+      </div>`;
+  }
+
+  feed.insertBefore(item, feed.firstChild);
+  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
+  loadStats();
+}
+
+function updateStatusPill(d) {
+  const el = document.getElementById('lastStatus');
+  el.className = 'status-pill ' + (d.status === 'granted' ? 'granted' : 'denied');
+  el.innerHTML = d.status === 'granted'
+    ? `<span>⬤</span> ${d.name}`
+    : '<span>⬤</span> Unauthorized';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  REGISTER — Click required (manual capture)
+// ═══════════════════════════════════════════════════════════════════════════
+let registerStream  = null;
+let capturedB64     = null;
+let registerCamOpen = false;
+
+function handleCapBoxClick() {
+  // Click on box only opens camera if not already open and no photo taken
+  if (!registerCamOpen && !capturedB64) {
+    openRegisterCam();
+  }
+}
+
+async function openRegisterCam() {
+  if (registerStream) return; // already open
+  try {
+    registerStream = await navigator.mediaDevices.getUserMedia({video: true});
+    const v = document.getElementById('captureVideo');
+    v.srcObject = registerStream;
+    v.style.display = 'block';
+    registerCamOpen = true;
+
+    document.getElementById('capPh').style.display    = 'none';
+    document.getElementById('capturedImg').style.display = 'none';
+    document.getElementById('btnCapture').disabled    = false;
+    document.getElementById('btnOpenCam').style.display  = 'none';
+    document.getElementById('btnRetake').style.display   = 'none';
+  } catch (e) {
+    showMsg('Camera error: ' + e.message, false);
+  }
+}
+
+function captureRegisterPhoto() {
+  // Manual click — take the photo
+  const v = document.getElementById('captureVideo');
+  const c = document.getElementById('captureCanvas');
+  c.width  = v.videoWidth;
+  c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  capturedB64 = c.toDataURL('image/jpeg');
+
+  // Show captured image
+  const img = document.getElementById('capturedImg');
+  img.src = capturedB64;
+  img.style.display = 'block';
+  v.style.display   = 'none';
+
+  // Stop camera stream
+  if (registerStream) {
+    registerStream.getTracks().forEach(t => t.stop());
+    registerStream = null;
+  }
+  registerCamOpen = false;
+
+  document.getElementById('btnCapture').disabled     = true;
+  document.getElementById('btnRetake').style.display = 'inline-flex';
+  document.getElementById('btnOpenCam').style.display = 'none';
+}
+
+function retakeRegisterPhoto() {
+  capturedB64     = null;
+  registerCamOpen = false;
+
+  document.getElementById('capturedImg').style.display  = 'none';
+  document.getElementById('captureVideo').style.display = 'none';
+  document.getElementById('capPh').style.display        = 'flex';
+  document.getElementById('btnOpenCam').style.display   = 'inline-flex';
+  document.getElementById('btnCapture').disabled         = true;
+  document.getElementById('btnRetake').style.display    = 'none';
+
+  if (registerStream) {
+    registerStream.getTracks().forEach(t => t.stop());
+    registerStream = null;
+  }
+}
+
+async function submitRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const id   = document.getElementById('regId').value.trim();
+  const role = document.getElementById('regRole').value;
+  const dept = document.getElementById('regDept').value.trim() || 'General';
+
+  if (!name || !id)      { showMsg('Name aur ID required hain.', false); return; }
+  if (!capturedB64)      { showMsg('Pehle photo lo (Photo Lo button dabao).', false); return; }
+
+  const res  = await fetch('/register', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name, id, role, dept, image: capturedB64})
+  });
+  const data = await res.json();
+
+  if (data.ok) {
+    showMsg('✓ ' + data.message, true);
+    // Show QR code
+    if (data.qr) {
+      const modal = document.getElementById('qrModal');
+      modal.style.display = 'block';
+      document.getElementById('qrCodeImg').src = data.qr;
+      document.getElementById('qrCodeId').textContent = 'ID: ' + data.id;
+      const dlBtn = document.getElementById('qrDownloadBtn');
+      dlBtn.href = data.qr;
+      dlBtn.download = 'QR_' + data.id + '.png';
+    }
+    document.getElementById('regName').value = '';
+    document.getElementById('regId').value   = '';
+    document.getElementById('regDept').value = '';
+    retakeRegisterPhoto();
+    loadStats();
+  } else {
+    showMsg('✗ ' + data.error, false);
+  }
+}
+
+function showMsg(text, ok) {
+  const el = document.getElementById('formMsg');
+  el.textContent = text;
+  el.className   = 'form-msg ' + (ok ? 'ok' : 'err');
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+// ── Students DB ────────────────────────────────────────────────────────────
+async function loadStudents(role, el) {
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const url  = role === 'all' ? '/students' : '/students?role=' + role;
+  const data = await (await fetch(url)).json();
+  document.getElementById('studentCount').textContent = data.length + ' registered';
+
+  const grid = document.getElementById('studentsGrid');
+  if (!data.length) {
+    grid.innerHTML = '<div class="empty-st">Koi record nahi mila.</div>';
+    return;
+  }
+  grid.innerHTML = data.map(s => `
+    <div class="student-card">
+      <div class="s-photo">${s.img ? `<img src="${s.img}" alt="${s.name}">` : '<div style="font-size:44px;opacity:0.2">👤</div>'}</div>
+      <div class="s-info">
+        <div class="s-name">${s.name}</div>
+        <div class="s-id">${s.id}</div>
+        <span class="s-role ${s.role}">${s.role.toUpperCase()}</span>
+      </div>
+      <button class="s-del" onclick="deleteStudent('${s.id}','${s.name}')">✕</button>
+    </div>`).join('');
+}
+
+async function deleteStudent(id, name) {
+  if (!confirm('Delete ' + name + '?')) return;
+  await fetch('/delete/' + id, {method: 'DELETE'});
+  loadStudents('all', document.querySelector('.rtab'));
+  loadStats();
+}
+
+// ── Logs ────────────────────────────────────────────────────────────────────
+async function loadLogs() {
+  const logs = await (await fetch('/logs')).json();
+  const body = document.getElementById('logsBody');
+  if (!logs.length) {
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:50px;color:var(--dim);font-family:monospace;font-size:12px;">No logs yet.</td></tr>';
+    return;
+  }
+  body.innerHTML = [...logs].reverse().map(l => `
+    <tr>
+      <td style="font-family:monospace;font-size:11px;color:var(--dim)">${l.timestamp}</td>
+      <td style="font-weight:700">${l.name}</td>
+      <td style="font-family:monospace;font-size:11px">${l.id || '—'}</td>
+      <td style="font-size:12px;color:var(--dim)">${l.role || '—'}</td>
+      <td><span class="badge ${l.status_label === 'GRANTED' ? 'granted' : 'denied'}">${l.status_label === 'GRANTED' ? '✓ GRANTED' : '✗ DENIED'}</span></td>
+      <td>${l.confidence ? `<div class="conf-row"><span style="font-family:monospace;font-size:11px">${l.confidence}%</span><div class="conf-bg"><div class="conf-fill" style="width:${l.confidence}%"></div></div></div>` : '—'}</td>
+    </tr>`).join('');
+}
+
+// ── Attendance ──────────────────────────────────────────────────────────────
+async function loadAttendance() {
+  const data = await (await fetch('/attendance')).json();
+  document.getElementById('attCount').textContent = data.length + ' students';
+  document.getElementById('attTotal').textContent  = data.length;
+  const presentToday = data.filter(s => s.today).length;
+  document.getElementById('attToday').textContent  = presentToday;
+  document.getElementById('attAbsent').textContent = data.length - presentToday;
+
+  const tbody = document.getElementById('attBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:50px;color:var(--dim);">No records.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(s => {
+    const pctColor = s.pct >= 75 ? 'var(--green)' : s.pct >= 50 ? 'var(--amber)' : 'var(--red)';
+    return `<tr onclick="showProfile('${s.id}')" style="cursor:pointer">
+      <td><div style="width:36px;height:36px;border-radius:8px;overflow:hidden;background:var(--bg2);display:flex;align-items:center;justify-content:center;">${s.img ? `<img src="${s.img}" style="width:100%;height:100%;object-fit:cover">` : '👤'}</div></td>
+      <td style="font-weight:700">${s.name}</td>
+      <td style="font-family:monospace;font-size:12px">${s.id}</td>
+      <td style="font-size:12px;color:var(--dim)">${s.dept}</td>
+      <td><span class="badge student">${s.role.toUpperCase()}</span></td>
+      <td style="font-family:monospace;font-weight:700;color:var(--purple)">${s.present}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><span style="font-family:monospace;font-size:12px;color:${pctColor};font-weight:700">${s.pct}%</span><div class="att-bar-bg"><div class="att-bar-fill" style="width:${s.pct}%;background:${pctColor}"></div></div></div></td>
+      <td><span class="badge ${s.today ? 'granted' : 'denied'}">${s.today ? '✓ YES' : '✗ NO'}</span></td>
+      <td style="font-size:11px;color:var(--dim);font-family:monospace">${s.last}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportExcel() { window.open('/attendance/export', '_blank'); }
+
+// ── Alerts ──────────────────────────────────────────────────────────────────
+async function loadAlerts() {
+  const data = await (await fetch('/alerts')).json();
+  const grid = document.getElementById('alertsGrid');
+  if (!data.length) {
+    grid.innerHTML = '<div class="empty-st">Koi unknown alert nahi abhi tak.</div>';
+    return;
+  }
+  grid.innerHTML = data.map(a => `
+    <div class="alert-card">
+      <div class="alert-img">${a.img ? `<img src="${a.img}" alt="Unknown">` : '<span style="font-size:36px;opacity:0.2">👤</span>'}</div>
+      <div class="alert-info">
+        <div class="alert-time">⚠️ ${a.timestamp}</div>
+        <div class="alert-label">Unknown person detected</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Profile card ─────────────────────────────────────────────────────────────
+async function showProfile(id) {
+  const p = await (await fetch('/profile/' + id)).json();
+  if (p.error) return;
+  const pctColor = p.pct >= 75 ? 'var(--green)' : p.pct >= 50 ? 'var(--amber)' : 'var(--red)';
+  const overlay  = document.createElement('div');
+  overlay.className = 'profile-overlay';
+  overlay.innerHTML = `
+    <div class="profile-card">
+      <div class="profile-top">
+        <div style="flex-shrink:0">${p.img ? `<img src="${p.img}" class="profile-photo">` : '<div style="width:72px;height:72px;border-radius:14px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:32px;border:2px solid var(--border)">👤</div>'}</div>
+        <div>
+          <div class="profile-name">${p.name}</div>
+          <div class="profile-role">${p.role.toUpperCase()} · ${p.dept}</div>
+        </div>
+      </div>
+      <div class="profile-body">
+        <div class="prow"><span class="pk">NAME</span><span class="pv">${p.name}</span></div>
+        <div class="prow"><span class="pk">ROLL NO</span><span class="pv" style="font-family:monospace">${p.id}</span></div>
+        <div class="prow"><span class="pk">DEPT</span><span class="pv">${p.dept}</span></div>
+        <div class="prow"><span class="pk">PRESENT DAYS</span><span class="pv" style="color:var(--purple)">${p.present}</span></div>
+        <div class="prow"><span class="pk">LAST SEEN</span><span class="pv" style="font-size:12px;font-family:monospace;color:var(--dim)">${p.last}</span></div>
+        <div class="prow" style="border:none"><span class="pk">ATTENDANCE</span>
+          <span class="pv" style="color:${pctColor};font-family:monospace;font-weight:700">${p.pct}%</span>
+        </div>
+      </div>
+      <button class="pclose" onclick="this.closest('.profile-overlay').remove()">✕ CLOSE</button>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// ── Stats ───────────────────────────────────────────────────────────────────
+async function loadStats() {
+  const [s, l] = await Promise.all([
+    fetch('/students').then(r => r.json()),
+    fetch('/logs').then(r => r.json())
+  ]);
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('sTotal').textContent = s.length;
+  document.getElementById('sLogs').textContent  = l.length;
+  document.getElementById('sToday').textContent = l.filter(x => x.timestamp && x.timestamp.startsWith(today)).length;
+}
+
+loadStats();
+
+// ── Voice Greeting (Web Speech API) ────────────────────────────────────────
+function speakGreeting(name, role, granted) {
+  if (!window.speechSynthesis) return;
+  const msg = new SpeechSynthesisUtterance();
+  if (granted) {
+    msg.text = `Welcome, ${name}! You may enter.`;
+    msg.pitch = 1.1; msg.rate = 0.95; msg.volume = 1;
+    // Pick a pleasant voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => v.lang === 'en-IN') || voices.find(v => v.lang.startsWith('en')) || voices[0];
+    if (preferred) msg.voice = preferred;
+  } else {
+    msg.text = `Access denied. You are not registered.`;
+    msg.pitch = 0.8; msg.rate = 0.9; msg.volume = 1;
+  }
+  window.speechSynthesis.cancel(); // stop any ongoing speech
+  window.speechSynthesis.speak(msg);
+}
+
+// Preload voices (Chrome needs this)
+window.speechSynthesis && window.speechSynthesis.getVoices();
+window.speechSynthesis && window.speechSynthesis.addEventListener && 
+  window.speechSynthesis.addEventListener('voiceschanged', () => window.speechSynthesis.getVoices());
+
+// ── Export Monthly Report ──────────────────────────────────────────────────
+function exportMonthly() {
+  const now   = new Date();
+  const year  = prompt("Kaunsa saal? (e.g. 2025)", now.getFullYear());
+  if (!year) return;
+  const month = prompt("Kaunsa mahina? (1-12)", now.getMonth() + 1);
+  if (!month) return;
+  window.open(`/attendance/monthly?year=${year}&month=${month}`, '_blank');
+}
+
+// ── QR Scanner page — Photo Upload ────────────────────────────────────────
+let qrImageLoaded = false;
+
+function initQRPage() {
+  clearQRUpload();
+}
+
+// Drag & drop handler
+function handleQRDrop(e) {
+  e.preventDefault();
+  document.getElementById('qrDropZone').style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadQRImage(file);
+}
+
+// File input handler
+function handleQRFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) loadQRImage(file);
+}
+
+function loadQRImage(file) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const preview = document.getElementById('qrUploadPreview');
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+    document.getElementById('qrDropPh').style.display    = 'none';
+    document.getElementById('btnQRVerify').disabled       = false;
+    document.getElementById('btnQRClear').style.display   = 'inline-flex';
+    qrImageLoaded = true;
+    showQRMsg('qrScanMsg', '✓ Photo load ho gayi — "Verify QR" dabao', 'ok');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearQRUpload() {
+  qrImageLoaded = false;
+  document.getElementById('qrUploadPreview').style.display = 'none';
+  document.getElementById('qrUploadPreview').src           = '';
+  document.getElementById('qrDropPh').style.display        = 'flex';
+  document.getElementById('btnQRVerify').disabled           = true;
+  document.getElementById('btnQRClear').style.display       = 'none';
+  document.getElementById('qrFileInput').value              = '';
+  document.getElementById('qrScanMsg').style.display        = 'none';
+  document.getElementById('qrResultCard').style.display     = 'none';
+}
+
+async function readAndVerifyQR() {
+  const preview = document.getElementById('qrUploadPreview');
+  if (!preview.src || !qrImageLoaded) {
+    showQRMsg('qrScanMsg', 'Pehle photo upload karo.', 'err');
+    return;
+  }
+
+  showQRMsg('qrScanMsg', '🔍 QR scan ho raha hai…', 'warn');
+  document.getElementById('btnQRVerify').disabled = true;
+
+  try {
+    // Send image to Flask server — OpenCV se QR decode hoga
+    const res  = await fetch('/qr_upload', {
+      method : 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body   : JSON.stringify({ image: preview.src })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      showQRMsg('qrScanMsg', '✓ QR mila — entry verify ho rahi hai…', 'ok');
+      verifyQRData(data.qr_data, 'qrScanMsg');
+    } else {
+      showQRMsg('qrScanMsg', '✗ ' + data.error, 'err');
+      document.getElementById('btnQRVerify').disabled = false;
+    }
+  } catch(e) {
+    showQRMsg('qrScanMsg', '✗ Server se connect nahi hua: ' + e.message, 'err');
+    document.getElementById('btnQRVerify').disabled = false;
+  }
+}
+
+function verifyQRManual() {
+  const val = document.getElementById('qrManualInput').value.trim();
+  if (!val) { showQRMsg('qrManualMsg', 'QR data enter karo.', 'err'); return; }
+  verifyQRData(val, 'qrManualMsg');
+}
+
+async function verifyQRData(qr_data, msgId) {
+  showQRMsg(msgId, 'Verifying…', 'warn');
+  const res  = await fetch('/qr_verify', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({qr_data})
+  });
+  const data = await res.json();
+
+  if (data.ok) {
+    showQRMsg(msgId, `✓ Entry granted — ${data.name}`, 'ok');
+    showQRResult(data);
+    speakGreeting(data.name, data.role, true);
+    playSuccess();
+    addActivity({...data, status: 'granted', confidence: 'QR'});
+  } else {
+    showQRMsg(msgId, '✗ ' + data.error, 'err');
+    playAlarm();
+    speakGreeting('', '', false);
+  }
+}
+
+function showQRResult(d) {
+  const card = document.getElementById('qrResultCard');
+  card.style.display = 'block';
+  document.getElementById('qrPersonName').textContent = d.name;
+  document.getElementById('qrPersonId').textContent   = d.id;
+  document.getElementById('qrPersonRole').textContent = d.role.toUpperCase() + ' · ' + d.dept;
+  document.getElementById('qrPersonAtt').textContent  = `Attendance: ${d.att_pct}%  ${d.newly_marked ? '✓ Marked today' : '(Already marked)'}`;
+  if (d.img) {
+    document.getElementById('qrPersonImg').src          = d.img;
+    document.getElementById('qrPersonImg').style.display = 'block';
+    document.getElementById('qrPersonPlaceholder').style.display = 'none';
+  } else {
+    document.getElementById('qrPersonImg').style.display = 'none';
+    document.getElementById('qrPersonPlaceholder').style.display = 'block';
+  }
+}
+
+function showQRMsg(elId, text, type) {
+  const el = document.getElementById(elId);
+  el.textContent = text; el.style.display = 'block';
+  const colors = {ok: 'rgba(52,211,153,0.1)', err: 'rgba(244,63,94,0.1)', warn: 'rgba(251,191,36,0.07)'};
+  const borders = {ok: 'rgba(52,211,153,0.35)', err: 'rgba(244,63,94,0.35)', warn: 'rgba(251,191,36,0.3)'};
+  const texts   = {ok: 'var(--green)', err: 'var(--red)', warn: 'var(--amber)'};
+  el.style.background = colors[type] || colors.warn;
+  el.style.border     = `1px solid ${borders[type] || borders.warn}`;
+  el.style.color      = texts[type]  || texts.warn;
+}
+
+</script>
+</body>
+</html>
