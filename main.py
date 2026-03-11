@@ -294,4 +294,4 @@ def delete_person(db: "Database", disp: "Display"):
 
 
 if __name__ == "__main__":
-    main()  
+    main()
